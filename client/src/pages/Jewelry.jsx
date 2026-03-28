@@ -1,9 +1,9 @@
 import { ProductList } from "../components/ProductList";
 
-export const Clothing = () => {
+export const Jewelry = () => {
     return (
         <main className="page-content" style={{ padding: '2rem 2rem', width: '100%' }}>
-            <ProductList category="Clothing" />
+            <ProductList category="Jewelry" />
         </main>
     );
 };

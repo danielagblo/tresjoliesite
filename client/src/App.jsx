@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import { Home } from "./pages/Home";
 import { Clothing } from "./pages/Clothing";
-import { Jewelery } from "./pages/Jewelery";
+import { Jewelry } from "./pages/Jewelry";
 import { Admin } from "./admin/Admin";
 import { Login } from "./admin/Login";
 import { AuthProvider } from "./admin/AuthContext";
@@ -16,18 +16,18 @@ function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           <Route path="/clothing" element={<Clothing />} />
-          <Route path="/jewelery" element={<Jewelery />} />
+          <Route path="/jewelry" element={<Jewelry />} />
         </Route>
 
         {/* Admin Pages with Different Layout (Directly added here or using a new AdminLayout) */}
         <Route path="/admin/login" element={<Login />} />
-        <Route 
-          path="/admin" 
+        <Route
+          path="/admin"
           element={
             <ProtectedRoute>
               <Admin />
             </ProtectedRoute>
-          } 
+          }
         />
       </Routes>
     </AuthProvider>

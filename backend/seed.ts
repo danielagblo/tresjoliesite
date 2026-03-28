@@ -9,11 +9,11 @@ dotenv.config();
 const seedProducts = async () => {
     try {
         await connectDB();
-        
+
         // Remove existing products and users
         await Product.deleteMany({});
         await User.deleteMany({});
-        
+
         // Seed Admin User
         const admin = new User({
             username: 'admin',
@@ -29,8 +29,45 @@ const seedProducts = async () => {
             { name: 'Pearl Bracelet', category: 'Jewelry', price: '€65', featured: true },
             { name: 'Summer Dress', category: 'Clothing', price: '€95', featured: false },
             { name: 'Silver Ring', category: 'Jewelry', price: '€30', featured: false },
+            { name: 'Linen Blouse', category: 'Clothing', price: '€89', featured: true },
+            { name: 'Gold Hoop Earrings', category: 'Jewelry', price: '€45', featured: true },
+            { name: 'Cotton Midi Dress', category: 'Clothing', price: '€120', featured: true },
+            { name: 'Pearl Bracelet', category: 'Jewelry', price: '€65', featured: true },
+            { name: 'Summer Dress', category: 'Clothing', price: '€95', featured: false },
+            { name: 'Silver Ring', category: 'Jewelry', price: '€30', featured: false },
+            { name: 'Linen Blouse', category: 'Clothing', price: '€89', featured: true },
+            { name: 'Gold Hoop Earrings', category: 'Jewelry', price: '€45', featured: true },
+            { name: 'Cotton Midi Dress', category: 'Clothing', price: '€120', featured: true },
+            { name: 'Pearl Bracelet', category: 'Jewelry', price: '€65', featured: true },
+            { name: 'Summer Dress', category: 'Clothing', price: '€95', featured: false },
+            { name: 'Silver Ring', category: 'Jewelry', price: '€30', featured: false },
+            { name: 'Linen Blouse', category: 'Clothing', price: '€89', featured: true },
+            { name: 'Gold Hoop Earrings', category: 'Jewelry', price: '€45', featured: true },
+            { name: 'Cotton Midi Dress', category: 'Clothing', price: '€120', featured: true },
+            { name: 'Pearl Bracelet', category: 'Jewelry', price: '€65', featured: true },
+            { name: 'Summer Dress', category: 'Clothing', price: '€95', featured: false },
+            { name: 'Silver Ring', category: 'Jewelry', price: '€30', featured: false },
+            { name: 'Linen Blouse', category: 'Clothing', price: '€89', featured: true },
+            { name: 'Gold Hoop Earrings', category: 'Jewelry', price: '€45', featured: true },
+            { name: 'Cotton Midi Dress', category: 'Clothing', price: '€120', featured: true },
+            { name: 'Pearl Bracelet', category: 'Jewelry', price: '€65', featured: true },
+            { name: 'Summer Dress', category: 'Clothing', price: '€95', featured: false },
+            { name: 'Silver Ring', category: 'Jewelry', price: '€30', featured: false },
+            { name: 'Linen Blouse', category: 'Clothing', price: '€89', featured: true },
+            { name: 'Gold Hoop Earrings', category: 'Jewelry', price: '€45', featured: true },
+            { name: 'Cotton Midi Dress', category: 'Clothing', price: '€120', featured: true },
+            { name: 'Pearl Bracelet', category: 'Jewelry', price: '€65', featured: true },
+            { name: 'Summer Dress', category: 'Clothing', price: '€95', featured: false },
+            { name: 'Silver Ring', category: 'Jewelry', price: '€30', featured: false },
+            { name: 'Linen Blouse', category: 'Clothing', price: '€89', featured: true },
+            { name: 'Gold Hoop Earrings', category: 'Jewelry', price: '€45', featured: true },
+            { name: 'Cotton Midi Dress', category: 'Clothing', price: '€120', featured: true },
+            { name: 'Pearl Bracelet', category: 'Jewelry', price: '€65', featured: true },
+            { name: 'Summer Dress', category: 'Clothing', price: '€95', featured: false },
+            { name: 'Silver Ring', category: 'Jewelry', price: '€30', featured: false },
+
         ];
-        
+
         await Product.insertMany(products);
         console.log('Database seeded with initial products');
         process.exit(0);

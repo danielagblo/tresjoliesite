@@ -8,10 +8,9 @@ export function Footer() {
         <p className="footer-logo">Très Jolie</p>
         <p className="footer-tagline">Clothing &amp; Jewelry — curated for you.</p>
         <div className="footer-links">
-          <Link to="#clothing">Clothing</Link>
-          <Link to="#jewelry">Jewelry</Link>
-          <Link to="#featured">Featured</Link>
-          <Link to="/admin">Admin</Link>
+          <Link to="/clothing">Clothing</Link>
+          <Link to="/jewelry">Jewelry</Link>
+          <Link to="/#featured">Featured</Link>
         </div>
         <p className="footer-copy">&copy; {new Date().getFullYear()} Très Jolie. All rights reserved.</p>
       </div>

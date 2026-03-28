@@ -2,6 +2,7 @@ import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
+import { initializeAdmin } from './utils/adminInit.js';
 import productRoutes from './routes/productRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import imageRoutes from './routes/imageRoutes.js';
@@ -11,8 +12,10 @@ dotenv.config();
 const app: Application = express();
 const PORT: number = process.env.PORT ? parseInt(process.env.PORT) : 5000;
 
-// Connect to Database
-connectDB();
+// Connect to Database & Initialize Admin
+connectDB().then(() => {
+    initializeAdmin();
+});
 
 // Middleware
 app.use(cors({

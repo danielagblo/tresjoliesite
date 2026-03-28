@@ -8,10 +8,10 @@ const API_URL = `${import.meta.env.VITE_API_URL}/products`;
 export const Admin = () => {
     const { token, logout } = useAuth();
     const queryClient = useQueryClient();
-    const [formData, setFormData] = useState({ name: '', category: 'Clothing', price: '', featured: false });
+    const [formData, setFormData] = useState({ name: '', category: 'Clothing', price: '', featured: false, images: [] });
     const [editingId, setEditingId] = useState(null);
     const [showModal, setShowModal] = useState(false);
-    const [imageFile, setImageFile] = useState(null);
+    const [imageFiles, setImageFiles] = useState([]);
 
     // API Functions
     const fetchProducts = async () => {
@@ -24,21 +24,28 @@ export const Admin = () => {
         const method = id ? 'PUT' : 'POST';
         const url = id ? `${API_URL}/${id}` : API_URL;
         
-        // Handle file upload if present
         const data = new FormData();
         data.append('name', product.name);
         data.append('category', product.category);
         data.append('price', product.price);
         data.append('featured', product.featured);
-        if (imageFile) {
-            data.append('image', imageFile);
+        
+        // For PUT, we need to tell the server which old images to keep
+        if (id) {
+            data.append('existingImages', JSON.stringify(product.images));
+        }
+
+        // Add brand new files
+        if (imageFiles.length > 0) {
+            imageFiles.forEach(file => {
+                data.append('images', file);
+            });
         }
 
         const response = await fetch(url, {
             method,
             headers: { 
                 'Authorization': `Bearer ${token}`
-                // Note: Content-Type is set automatically for FormData
             },
             body: data
         });
@@ -69,7 +76,6 @@ export const Admin = () => {
         mutationFn: saveProduct,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['products'] });
-            queryClient.invalidateQueries({ queryKey: ['featuredProducts'] });
             handleCloseModal();
         },
         onError: (err) => alert(err.message)
@@ -87,7 +93,16 @@ export const Admin = () => {
     };
 
     const handleFileChange = (e) => {
-        setImageFile(e.target.files[0]);
+        const files = Array.from(e.target.files);
+        setImageFiles([...imageFiles, ...files]);
+    };
+
+    const removeNewFile = (index) => {
+        setImageFiles(imageFiles.filter((_, i) => i !== index));
+    };
+
+    const removeExistingImage = (url) => {
+        setFormData({ ...formData, images: formData.images.filter(img => img !== url) });
     };
 
     const handleSubmit = (e) => {
@@ -96,15 +111,21 @@ export const Admin = () => {
     };
 
     const handleEdit = (product) => {
-        setFormData({ name: product.name, category: product.category, price: product.price, featured: product.featured || false });
-        setImageFile(null); // Keep or reset image? Typically reset unless a new file is picked.
+        setFormData({ 
+            name: product.name, 
+            category: product.category, 
+            price: product.price, 
+            featured: product.featured || false,
+            images: product.images || []
+        });
+        setImageFiles([]);
         setEditingId(product._id);
         setShowModal(true);
     };
 
     const handleOpenModal = () => {
-        setFormData({ name: '', category: 'Clothing', price: '', featured: false });
-        setImageFile(null);
+        setFormData({ name: '', category: 'Clothing', price: '', featured: false, images: [] });
+        setImageFiles([]);
         setEditingId(null);
         setShowModal(true);
     };
@@ -115,7 +136,7 @@ export const Admin = () => {
     };
 
     const handleDelete = (id) => {
-        if (!window.confirm('Are you sure?')) return;
+        if (!window.confirm('Are you sure you want to delete this product?')) return;
         deleteMutation.mutate(id);
     };
 
@@ -144,7 +165,7 @@ export const Admin = () => {
                     <table className="admin-table">
                         <thead>
                             <tr>
-                                <th>Image</th>
+                                <th>Images</th>
                                 <th>Name</th>
                                 <th>Category</th>
                                 <th>Price</th>
@@ -156,8 +177,11 @@ export const Admin = () => {
                             {products.map(product => (
                                 <tr key={product._id}>
                                     <td>
-                                        <div className="img-preview-sm">
-                                            {product.image && <img src={product.image} alt={product.name} />}
+                                        <div className="img-preview-row">
+                                            {product.images?.slice(0, 3).map((img, i) => (
+                                                <img key={i} src={img} alt="" className="img-preview-sm" />
+                                            ))}
+                                            {product.images?.length > 3 && <span className="more-count">+{product.images.length - 3}</span>}
                                         </div>
                                     </td>
                                     <td>{product.name}</td>
@@ -177,34 +201,61 @@ export const Admin = () => {
 
             {showModal && (
                 <div className="modal-overlay">
-                    <div className="modal-content">
+                    <div className="modal-content admin-modal">
                         <h2>{editingId ? 'Edit Product' : 'Add New Product'}</h2>
                         <form onSubmit={handleSubmit} className="admin-form">
-                            <div className="form-group">
-                                <label>Name</label>
-                                <input type="text" name="name" value={formData.name} onChange={handleInputChange} required />
+                            <div className="form-grid">
+                                <div className="form-column">
+                                    <div className="form-group">
+                                        <label>Name</label>
+                                        <input type="text" name="name" value={formData.name} onChange={handleInputChange} required />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Category</label>
+                                        <select name="category" value={formData.category} onChange={handleInputChange}>
+                                            <option value="Clothing">Clothing</option>
+                                            <option value="Jewelry">Jewelry</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Price</label>
+                                        <input type="text" name="price" value={formData.price} onChange={handleInputChange} required />
+                                    </div>
+                                    <div className="form-group checkbox-group">
+                                        <label>
+                                            <input type="checkbox" name="featured" checked={formData.featured} onChange={handleInputChange} />
+                                            Featured Item
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="form-column">
+                                    <label>Gallery</label>
+                                    <div className="gallery-manager">
+                                        <div className="image-grid-admin">
+                                            {/* Existing Images */}
+                                            {formData.images.map((img, i) => (
+                                                <div key={i} className="admin-img-card">
+                                                    <img src={img} alt="" />
+                                                    <button type="button" className="img-remove-btn" onClick={() => removeExistingImage(img)}>&times;</button>
+                                                </div>
+                                            ))}
+                                            {/* New file previews */}
+                                            {imageFiles.map((file, i) => (
+                                                <div key={`new-${i}`} className="admin-img-card new-img">
+                                                    <img src={URL.createObjectURL(file)} alt="" />
+                                                    <button type="button" className="img-remove-btn" onClick={() => removeNewFile(i)}>&times;</button>
+                                                </div>
+                                            ))}
+                                            <label className="add-img-box">
+                                                <span>+ Add</span>
+                                                <input type="file" multiple onChange={handleFileChange} accept="image/*" hidden />
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="form-group">
-                                <label>Category</label>
-                                <select name="category" value={formData.category} onChange={handleInputChange}>
-                                    <option value="Clothing">Clothing</option>
-                                    <option value="Jewelry">Jewelry</option>
-                                </select>
-                            </div>
-                            <div className="form-group">
-                                <label>Price</label>
-                                <input type="text" name="price" value={formData.price} onChange={handleInputChange} required />
-                            </div>
-                            <div className="form-group">
-                                <label>Product Image</label>
-                                <input type="file" onChange={handleFileChange} accept="image/*" />
-                            </div>
-                            <div className="form-group checkbox-group">
-                                <label>
-                                    <input type="checkbox" name="featured" checked={formData.featured} onChange={handleInputChange} />
-                                    Featured Item
-                                </label>
-                            </div>
+
                             <div className="modal-actions">
                                 <button type="submit" className="btn-save" disabled={saveMutation.isPending}>
                                     {saveMutation.isPending ? 'Saving...' : (editingId ? 'Update' : 'Create')}

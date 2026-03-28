@@ -9,7 +9,10 @@ const router: Router = express.Router();
 
 // MULTER SETUP (Memory storage for S3 uploads)
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit per file
+});
 
 // GET /api/products
 router.get('/', async (req: Request, res: Response): Promise<void> => {
@@ -19,7 +22,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
         if (category) filter.category = category;
         if (featured === 'true') filter.featured = true;
         
-        const products: IProduct[] = await Product.find(filter);
+        const products = await Product.find(filter).sort({ createdAt: -1 });
         res.status(200).json(products);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : String(error) });
@@ -27,16 +30,21 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 });
 
 // POST /api/products
-router.post('/', authMiddleware, upload.single('image'), async (req: Request, res: Response): Promise<void> => {
+router.post('/', authMiddleware, upload.array('images', 10), async (req: Request, res: Response): Promise<void> => {
     try {
-        let imageUrl = undefined;
-        if (req.file) {
-            imageUrl = await uploadAndCompressToS3(req.file);
+        const files = req.files as Express.Multer.File[];
+        const uploadedUrls: string[] = [];
+
+        if (files && files.length > 0) {
+            for (const file of files) {
+                const url = await uploadAndCompressToS3(file);
+                uploadedUrls.push(url);
+            }
         }
 
         const product = new Product({
             ...req.body,
-            image: imageUrl
+            images: uploadedUrls
         });
         await product.save();
         res.status(201).json(product);
@@ -46,23 +54,54 @@ router.post('/', authMiddleware, upload.single('image'), async (req: Request, re
 });
 
 // PUT /api/products/:id
-router.put('/:id', authMiddleware, upload.single('image'), async (req: Request, res: Response): Promise<void> => {
+router.put('/:id', authMiddleware, upload.array('images', 10), async (req: Request, res: Response): Promise<void> => {
     try {
-        const updateData: any = { ...req.body };
-        if (req.file) {
-            // Delete old image if possible (optional but good)
-            const oldProduct = await Product.findById(req.params.id);
-            if (oldProduct?.image) {
-                await deleteFileFromS3(oldProduct.image);
-            }
-            updateData.image = await uploadAndCompressToS3(req.file);
-        }
-        
-        const product = await Product.findByIdAndUpdate(req.params.id, updateData, { new: true });
-        if (!product) {
+        const id = req.params.id;
+        const files = req.files as Express.Multer.File[];
+        const oldProduct = await Product.findById(id);
+
+        if (!oldProduct) {
             res.status(404).json({ message: 'Product not found' });
             return;
         }
+
+        // Parse existing images that we want to keep
+        // This comes as a JSON string from frontend FormData
+        let imagesToKeep: string[] = [];
+        if (req.body.existingImages) {
+            try {
+                imagesToKeep = JSON.parse(req.body.existingImages);
+            } catch (e) {
+                imagesToKeep = Array.isArray(req.body.existingImages) ? req.body.existingImages : [req.body.existingImages];
+            }
+        }
+
+        // Identify images to delete from S3
+        const imagesToDelete = oldProduct.images.filter(img => !imagesToKeep.includes(img));
+        for (const imgUrl of imagesToDelete) {
+            await deleteFileFromS3(imgUrl);
+        }
+
+        // Upload new images
+        const newUploadedUrls: string[] = [];
+        if (files && files.length > 0) {
+            for (const file of files) {
+                const url = await uploadAndCompressToS3(file);
+                newUploadedUrls.push(url);
+            }
+        }
+
+        // Final image list: kept ones + brand new ones
+        const finalImages = [...imagesToKeep, ...newUploadedUrls];
+
+        const updateData = {
+            ...req.body,
+            images: finalImages
+        };
+        // Remove existingImages from updateData to stop it from saving as a field
+        delete updateData.existingImages;
+
+        const product = await Product.findByIdAndUpdate(id, updateData, { new: true });
         res.status(200).json(product);
     } catch (error) {
         res.status(400).json({ message: 'Error updating product', error: error instanceof Error ? error.message : String(error) });
@@ -78,8 +117,11 @@ router.delete('/:id', authMiddleware, async (req: Request, res: Response): Promi
             return;
         }
 
-        if (product.image) {
-            await deleteFileFromS3(product.image);
+        // Delete all images from S3
+        if (product.images && product.images.length > 0) {
+            for (const imgUrl of product.images) {
+                await deleteFileFromS3(imgUrl);
+            }
         }
 
         await Product.findByIdAndDelete(req.params.id);

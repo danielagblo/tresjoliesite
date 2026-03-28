@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import './Featured.css';
+import { GalleryCard } from './GalleryCard';
 
 const fetchProducts = async (category) => {
   const apiUrl = import.meta.env.VITE_API_URL;
@@ -22,18 +23,9 @@ export const ProductList = ({ category }) => {
   return (
     <div className="featured-grid">
       {products.map((product) => (
-        <article key={product._id} className="product-card">
-          <div className="product-image">
-            {product.image && <img src={product.image} alt={product.name} />}
-          </div>
-          <div className="product-info">
-            <span className="product-category">{product.category}</span>
-            <h3 className="product-name">{product.name}</h3>
-            <span className="product-price">{product.price}</span>
-          </div>
-        </article>
+        <GalleryCard key={product._id} product={product} />
       ))}
-      {products.length === 0 && <p>No products found in this category.</p>}
+      {products.length === 0 && <p className="no-products">No products found in this category.</p>}
     </div>
   );
 };
