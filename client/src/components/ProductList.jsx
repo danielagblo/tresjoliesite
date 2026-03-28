@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import './Featured.css';
 
 const fetchProducts = async (category) => {
-  let url = 'http://localhost:5000/api/products';
+  const apiUrl = import.meta.env.VITE_API_URL;
+  let url = `${apiUrl}/products`;
   if (category) url += `?category=${category}`;
   const response = await fetch(url);
   if (!response.ok) throw new Error('Failed to fetch products');
